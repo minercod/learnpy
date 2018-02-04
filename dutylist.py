@@ -1,13 +1,14 @@
 import calendar
 import xlwt
+import xlrd
 
 #判断闰年
 def initialmonths(year):
     months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     if calendar.isleap(year):
-        months[1]=29
+        months[1] = 29
     else:
-        months[1]=28
+        months[1] = 28
     return months
 
 #根据年份月份判断当月天数
@@ -19,35 +20,48 @@ def initialdays(year,month):
 #返回日期的星期
 def weekday(year,month,day):
     weekdaynum = calendar.weekday(year,month,day)
-    weekdays = ['一','二','三','四','五','六','日']
-    weekday  = weekdays[weekdaynum]
+    weekdays   = ['一','二','三','四','五','六','日']
+    weekday    = weekdays[weekdaynum]
     return weekday
 
 #获取年份
 def getyear():
     while True:
-        year = int(input('请输入年份（注意：请输入数字，2018～2100）：'))
-        if year>2017 and year<2100:
+        year = int(input('请输入年份（注意：请输入数字，2000～2100）：'))
+        if year > 1999 and year < 2100:
             break
     return year
 
 #获取月份
 def getmonth():
     while True:
-        month=int(input('请输入月份（注意：请输入数字，1～12）：'))
-        if month>0 and month<13:
+        month = int(input('请输入月份（注意：请输入数字，1～12）：'))
+        if month > 0 and month < 13:
             break
     return month
 
-#初始化数据表
+#提取profile
+def get_profile():
+    profile  = []
+    xls      = xlrd.open_workbook('profile.xls')
+    sheet    = xls.sheets()[0]
+    for i in range(1,15):
+        profile.append(sheet.row_values(i))
+    for j in range(len(profile)):
+        profile[j][1] = int(profile[j][1])
+        profile[j][2] = int(profile[j][2])
+        profile[j][3] = int(profile[j][3])
+    return profile
+
+#初始化数据容器
 def initlist(year,month,days):
-    monthlist  = []
-    daylist    = ['0','0','0','0','0']
+    monthlist = []
+    daylist   = ['0','0','0','0','0']
     for i in range(days):
-        daylist[0]=i+1
+        daylist[0] = i+1
         monthlist.append(daylist.copy())
     for i in range(days):
-        monthlist[i][1]=weekday(year,month,i+1)
+        monthlist[i][1] = weekday(year,month,i+1)
     return monthlist
 
 #初始化输出表格
@@ -56,16 +70,16 @@ def set_style(font_name,font_height,bold=False,bordersset=False):
 
     #字体设置
     font = xlwt.Font()
-    font.name         = font_name
-    font.height       = font_height  #20=1pt
-    font.bold         = bold
+    font.name   = font_name
+    font.height = font_height  #20=1pt
+    font.bold   = bold
 
     #单元格设置
     borders = xlwt.Borders()
     if bordersset:
-        borders.left = 0
-        borders.right = 0
-        borders.top = 0
+        borders.left   = 0
+        borders.right  = 0
+        borders.top    = 0
         borders.bottom = 0
     else:
         borders.left   = xlwt.Borders.THIN
@@ -113,19 +127,19 @@ def write_to_excel_xlwt(year,month,monthlist):
 
     #设置行高
     new_sheet.row(0).height_mismatch = True
-    new_sheet.row(0).height = 800
+    new_sheet.row(0).height          = 800
     #for j in range(1,len(monthlist)+3):
         #new_sheet.row(i).height_mismatch = True
         #new_sheet.row(i).height = 1000
 
-    new_workbook.save(str(year)+'-'+str(month)+'daiban.xls')
+    new_workbook.save(str(year)+'.'+str(month)+'dutylist.xls')
 
 
 def main():
-    year = getyear()
-    month = getmonth()
-    days = initialdays(year,month)
-    monthlist=initlist(year,month,days)
+    year      = getyear()
+    month     = getmonth()
+    days      = initialdays(year,month)
+    monthlist = initlist(year,month,days)
     write_to_excel_xlwt(year,month,monthlist)
     print("%s年%s月有%s天"%(year,month,days))
 
@@ -133,6 +147,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+    #x=get_profile()
+    #print(x)
 
 
 
