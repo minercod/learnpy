@@ -3,7 +3,7 @@ import xlwt
 import xlrd
 
 #判断闰年
-def initialmonths(year):
+def initial_months(year):
     months = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     if calendar.isleap(year):
         months[1] = 29
@@ -12,8 +12,8 @@ def initialmonths(year):
     return months
 
 #根据年份月份判断当月天数
-def initialdays(year,month):
-    months = initialmonths(year)
+def initial_days(year,month):
+    months = initial_months(year)
     days   = months[month-1]
     return days
 
@@ -25,7 +25,7 @@ def weekday(year,month,day):
     return weekday
 
 #获取年份
-def getyear():
+def get_year():
     while True:
         year = int(input('请输入年份（注意：请输入数字，2000～2100）：'))
         if year > 1999 and year < 2100:
@@ -33,7 +33,7 @@ def getyear():
     return year
 
 #获取月份
-def getmonth():
+def get_month():
     while True:
         month = int(input('请输入月份（注意：请输入数字，1～12）：'))
         if month > 0 and month < 13:
@@ -54,17 +54,17 @@ def get_profile():
     return profile
 
 #初始化数据容器
-def initlist(year,month,days):
-    monthlist = []
+def initial_list(year,month,days):
+    dutylist = []
     daylist   = ['0','0','0','0','0']
     for i in range(days):
         daylist[0] = i+1
-        monthlist.append(daylist.copy())
+        dutylist.append(daylist.copy())
     for i in range(days):
-        monthlist[i][1] = weekday(year,month,i+1)
-    return monthlist
+        dutylist[i][1] = weekday(year,month,i+1)
+    return dutylist
 
-#初始化输出表格
+#初始化输出表格格式
 def set_style(font_name,font_height,bold=False,bordersset=False):
     style = xlwt.XFStyle()
 
@@ -98,7 +98,7 @@ def set_style(font_name,font_height,bold=False,bordersset=False):
 
     return style
 
-def write_to_excel_xlwt(year,month,monthlist):
+def write_to_excel(year,month,dutylist):
     new_workbook = xlwt.Workbook()
     new_sheet    = new_workbook.add_sheet('带班')
 
@@ -112,12 +112,12 @@ def write_to_excel_xlwt(year,month,monthlist):
     new_sheet.write(2,4,'夜班',set_style('宋体',300))
 
     #充填数据
-    for i in range(len(monthlist)):
-        new_sheet.write(i+3,0,str(monthlist[i][0]),set_style('Times New Roman',300))
-        new_sheet.write(i+3,1,monthlist[i][1],set_style('宋体',300))
-        new_sheet.write(i+3,2,monthlist[i][2],set_style('宋体',300))
-        new_sheet.write(i+3,3,monthlist[i][3],set_style('宋体',300))
-        new_sheet.write(i+3,4,monthlist[i][4],set_style('宋体',300))
+    for i in range(len(dutylist)):
+        new_sheet.write(i+3,0,str(dutylist[i][0]),set_style('Times New Roman',300))
+        new_sheet.write(i+3,1,dutylist[i][1],set_style('宋体',300))
+        new_sheet.write(i+3,2,dutylist[i][2],set_style('宋体',300))
+        new_sheet.write(i+3,3,dutylist[i][3],set_style('宋体',300))
+        new_sheet.write(i+3,4,dutylist[i][4],set_style('宋体',300))
 
     #设置列宽
     for l in range(2):
@@ -128,27 +128,23 @@ def write_to_excel_xlwt(year,month,monthlist):
     #设置行高
     new_sheet.row(0).height_mismatch = True
     new_sheet.row(0).height          = 800
-    #for j in range(1,len(monthlist)+3):
-        #new_sheet.row(i).height_mismatch = True
-        #new_sheet.row(i).height = 1000
 
     new_workbook.save(str(year)+'.'+str(month)+'dutylist.xls')
 
 
 def main():
-    year      = getyear()
-    month     = getmonth()
-    days      = initialdays(year,month)
-    monthlist = initlist(year,month,days)
-    write_to_excel_xlwt(year,month,monthlist)
+    year      = get_year()
+    month     = get_month()
+    days      = initial_days(year,month)
+    dutylist = initial_list(year,month,days)
+    write_to_excel_xlwt(year,month,dutylist)
     print("%s年%s月有%s天"%(year,month,days))
 
 
 
 if __name__ == '__main__':
     main()
-    #x=get_profile()
-    #print(x)
+
 
 
 
