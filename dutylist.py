@@ -1,6 +1,42 @@
 import calendar
 import xlwt
 import xlrd
+import random
+
+#人员类
+class Person(object):
+    def __init__(self,name,totalcount,nooncount,evecount,weekdaycount):
+        self.name         = name
+        self.totalcount   = totalcount
+        self.nooncount    = nooncount
+        self.evecount     = evecount
+        self.weekday      = weekday
+
+
+#判断值班当天前后星期，用于判断中班、夜班
+def judgeweek(Person_weekday,weekday):
+    week_condition = {'一': ('日','一','二'),
+                      '二': ('一','二','三'),
+                      '三': ('二','三','四'),
+                      '四': ('三','四','五'),
+                      '五': ('四','五','六'),
+                      '六': ('五','六','日'),
+                      '日': ('六','日','一')}
+    for key,value in week_condition:
+        if Person_weekday == key:
+            condition = value
+    if weekday in condition:
+        return False
+    else:
+        return True
+
+#判断值班当天星期，用于判断早班
+def judgetoday(Person_weekday,weekday):
+        if Person_weekday == weekday:
+            return False
+        else:
+            return True
+
 
 #判断闰年
 def initial_months(year):
@@ -45,12 +81,12 @@ def get_profile():
     profile  = []
     xls      = xlrd.open_workbook('profile.xls')
     sheet    = xls.sheets()[0]
-    for i in range(1,15):
-        profile.append(sheet.row_values(i))
-    for j in range(len(profile)):
-        profile[j][1] = int(profile[j][1])
-        profile[j][2] = int(profile[j][2])
-        profile[j][3] = int(profile[j][3])
+    for i in range(1,sheet.nrows):
+        row_value = sheet.row_values(i)
+        if row_value[0] != '':
+            x = Person(row_value[0],int(row_value[1]),int(row_value[2]),int(row_value[3]),row_value[4])
+            profile.append(x)
+            del x
     return profile
 
 #初始化数据容器
@@ -63,6 +99,21 @@ def initial_list(year,month,days):
     for i in range(days):
         dutylist[i][1] = weekday(year,month,i+1)
     return dutylist
+
+#开始排班
+def chooseduty(profile,dutylist):
+    #夜班
+    for j in range(len(dutylist)):
+        x = random.randint(0,len(profile))
+        dutylist[j][4]=profile[x].name
+
+
+
+
+
+
+
+
 
 #初始化输出表格格式
 def set_style(font_name,font_height,bold=False,bordersset=False):
@@ -137,13 +188,14 @@ def main():
     month     = get_month()
     days      = initial_days(year,month)
     dutylist = initial_list(year,month,days)
-    write_to_excel_xlwt(year,month,dutylist)
+    write_to_excel(year,month,dutylist)
     print("%s年%s月有%s天"%(year,month,days))
 
 
 
 if __name__ == '__main__':
-    main()
+    #main()
+    print(get_profile())
 
 
 
