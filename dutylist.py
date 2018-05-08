@@ -1,46 +1,52 @@
 import calendar
 import xlwt,xlrd
 import random
+import copy
+
 
 #欢迎语
 def intro():
     print('------------------------------------------自动化带班表生成程序-----------------------------------------')
-    print('   注意: 程序运行需先自行设定main()函数中的corp_name;可利用except_check()函数来单独排除某人不带班的日期   ')
-    print('------------------------------------------------------------------------------------------------------')
+    print('                          注意: 程序运行需先自行设定main()函数中的corp_name                             ')
+    print('-----------------------------------------------------------------------------------------------------')
+
 
 #人员类
 class Person(object):
     def __init__(self, name, morningcount, nooncount, evecount, weekday):
         self.name = name
-        self.morningcount = morningcount
-        self.nooncount = nooncount
-        self.evecount = evecount
+        self.morningcount = int(morningcount)
+        self.nooncount = int(nooncount)
+        self.evecount = int(evecount)
         self.weekday = weekday
+        self.order = -1
 
-#判断值班当天前后星期，用于判断中班、夜班
-def judgeweek(person_weekday, weekday):
-    week_condition = {'一': ('日', '二'),
-                      '二': ('一', '三'),
-                      '三': ('二', '四'),
-                      '四': ('三', '五'),
-                      '五': ('四', '六'),
-                      '六': ('五', '日'),
-                      '日': ('六', '一')}
-    if person_weekday in week_condition:
-        conditions = week_condition[person_weekday]
-        if weekday in conditions:
-            return False
-        else:
+    def judgeall(self, weekday, order, date):
+        morning_order = [aa*3 for aa in range(31)]#早班序列
+        noon_order = [aa*3+1 for aa in range(31)]#中班序列
+        eve_order = [aa*3+2 for aa in range(31)]#夜班序列   
+        signal = 1
+        if date in ['10','20','29','30','31']:
+            if self.weekday in ['五', '日']:#避开安全检查
+                signal = 0
+        if self.order != -1:#避开重复
+            if order - self.order < 7:
+                signal = 0
+        if order in morning_order:#值班不带早班
+            if self.weekday == weekday :
+                signal = 0
+            if self.morningcount == 0:#早班排满
+                signal = 0
+        elif order in noon_order:
+            if self.nooncount == 0:#中班排满
+                signal = 0
+        elif order in eve_order:
+            if self.evecount == 0:#夜班排满
+                signal = 0
+        if signal == 1:
             return True
-    else:
-        return True
-
-#判断值班当天星期，用于判断早班
-def judgetoday(person_weekday, weekday):
-        if person_weekday == weekday:
-            return False
         else:
-            return True
+            return False
 
 #判断闰年
 def initial_months(year):
@@ -51,11 +57,13 @@ def initial_months(year):
         months[1] = 28
     return months
 
+
 #根据年份月份判断当月天数
 def initial_days(year, month):
     months = initial_months(year)
     days = months[month-1]
     return days
+
 
 #返回日期的星期
 def weekday(year, month, day):
@@ -63,6 +71,7 @@ def weekday(year, month, day):
     weekdays = ['一', '二', '三', '四', '五', '六', '日']
     weekday = weekdays[weekdaynum]
     return weekday
+
 
 #获取年份
 def get_year():
@@ -72,6 +81,7 @@ def get_year():
             break
     return year
 
+
 #获取月份
 def get_month():
     while True:
@@ -79,6 +89,7 @@ def get_month():
         if month > 0 and month < 13:
             break
     return month
+
 
 #提取profile
 def get_profile():
@@ -93,6 +104,7 @@ def get_profile():
             del x
     return profile
 
+
 #初始化数据容器
 def initial_list(year, month, days):
     dutylist = []
@@ -104,73 +116,44 @@ def initial_list(year, month, days):
         dutylist[i][1] = weekday(year, month, i+1)
     return dutylist
 
-#判断重复
-def judgerepeat(name, dutylist, j):
-    if j == 0:
-        if name in dutylist[0]:
-            return False
-        else:
-            return True
-    elif j == 1:
-        if name in dutylist[1] or name in dutylist[0]:
-            return False
-        else:
-            return True
-    else:
-        if name in dutylist[j] or name in dutylist[j-1] or name in dutylist[j-2]:
-            return False
-        else:
-            return True
-
-#排除检查
-def except_check(name, j):
-    if name == '   ':
-        if j in (8, 9, 18, 19, 28, 29, 30):
-            return False
-        else:
-            return True
-    elif name == '    ':
-        if j in (28, 29, 30):
-            return False
-        else:
-            return True
-    elif name == ' ':
-        if j in (9, 19, 29, 30):
-            return False
-        else:
-            return True
-    else:
-        return True
-
 #开始排班
-def chooseduty(profile, dutylist):
-    len_pro = len(profile)
-
-    for j in range(len(dutylist)):
-
-        #夜班
-        while True:
-            x = random.randint(0, len_pro-1)
-            if profile[x].evecount != 0 and judgeweek(profile[x].weekday, dutylist[j][1]) and judgerepeat(profile[x].name, dutylist, j) and except_check(profile[x].name, j):
-                break
-        dutylist[j][4] = profile[x].name
-        profile[x].evecount -= 1
-
-        #中班
-        while True:
-            y = random.randint(0, len_pro-1)
-            if profile[y].nooncount != 0 and judgeweek(profile[y].weekday, dutylist[j][1]) and judgerepeat(profile[y].name, dutylist, j) and except_check(profile[x].name, j):
-                break
-        dutylist[j][3] = profile[y].name
-        profile[y].nooncount -= 1
-
-        #早班
-        while True:
-            z = random.randint(0, len_pro-1)
-            if profile[z].morningcount != 0 and judgetoday(profile[z].weekday, dutylist[j][1]) and judgerepeat(profile[z].name, dutylist, j) and except_check(profile[x].name, j):
-                break
-        dutylist[j][2] = profile[z].name
-        profile[z].morningcount -= 1
+def chooseduty(exprofile, exdutylist):
+    #print('-------------------------------test---------------------------')
+    morning_order = [aa*3 for aa in range(31)]#早班序列
+    noon_order = [aa*3+1 for aa in range(31)]#中班序列
+    eve_order = [aa*3+2 for aa in range(31)]#夜班序列   
+    showtimes = 1
+    while True:
+        dutylist = copy.deepcopy(exdutylist)
+        profile = copy.deepcopy(exprofile)
+        order = 0
+        count = 0
+        for i in dutylist:
+            for xx in range(3):
+                while i[xx+2] == '0':
+                    if count > 1200:
+                        break
+                    dutyname = random.choice(profile)
+                    if dutyname.judgeall(i[1], order, i[0]):
+                        i[xx+2] = dutyname.name
+                        dutyname.order = order
+                        if order in morning_order:
+                            dutyname.morningcount -= 1
+                            #print(dutyname.morningcount)
+                        elif order in noon_order:
+                            dutyname.nooncount -= 1
+                            #print(dutyname.nooncount)
+                        elif order in eve_order:
+                            dutyname.evecount -= 1
+                            #print(dutyname.evecount)
+                        order += 1
+                    count += 1
+                    
+        print('进行第  %d  次计算'%showtimes)
+        print('到达第  %d  步'%order)
+        showtimes += 1
+        if dutylist[len(dutylist)-1][4] != '0':
+            break
     print('……排班表已生成，正在写入xls文件……')
     return dutylist
 
@@ -208,12 +191,14 @@ def set_style(font_name, font_height, bold = False, bordersset = False):
 
     return style
 
-def write_to_excel(year, month, dutylist, corp_name):
+
+#写入excel
+def write_to_excel(year: object, month: object, dutylist: object, corp_name: object) -> object:
     new_workbook = xlwt.Workbook()
     new_sheet    = new_workbook.add_sheet('带班')
 
     #初始化表头
-    new_sheet.write_merge(0, 0, 0, 4, corp_name+'领导带班表['+str(year)+'年'+str(month)+'月]', set_style('宋体', 400, True, True))
+    new_sheet.write_merge(0, 0, 0, 4, corp_name + '领导带班表[' + str(year) + '年' + str(month) + '月]', set_style('宋体', 400, True, True))
     new_sheet.write_merge(1, 2, 0, 0, '日期', set_style('宋体', 300))
     new_sheet.write_merge(1, 2, 1, 1, '星期', set_style('宋体', 300))
     new_sheet.write_merge(1, 1, 2, 4, '带班人员', set_style('宋体', 300))
@@ -237,22 +222,23 @@ def write_to_excel(year, month, dutylist, corp_name):
 
     #设置行高
     new_sheet.row(0).height_mismatch = True
-    new_sheet.row(0).height = 800
+    new_sheet.row(0).height = 1000
 
     new_workbook.save(str(year)+'.'+str(month)+'dutylist.xls')
 
+
 def main():
-    corp_name = '    '
+    corp_name = ''
     intro()
     year = get_year()
     month = get_month()
     days = initial_days(year, month)
-    print("%s年%s月有%s天" % (year, month, days))
-    dutylistex = initial_list(year, month, days)
+    exdutylist = initial_list(year, month, days)
     profile = get_profile()
-    dutylist = chooseduty(profile, dutylistex)
+    dutylist = chooseduty(profile, exdutylist)
     write_to_excel(year, month, dutylist, corp_name)
     print('……文件已写入完毕……')
+
 
 if __name__ == '__main__':
     main()
